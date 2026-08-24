@@ -2,6 +2,7 @@ import requests
 import csv
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 def get_city():
     city=input("Enter city: ").strip()
@@ -29,7 +30,24 @@ def check_if_us(txt):
 def state_code():
     state_code=input("Enter_state_code: ")
 
-
-
+def get_location(city, country, state=""):
+    load_dotenv()
+    API_KEY=os.getenv("API_KEY")
+    if state:
+        location=f"{city},{state},{country}"
+    else:
+        location=f"{city},{country}"
+    params={"q": location,"limit": 1,"appid": API_KEY}
+    url="http://api.openweathermap.org/geo/1.0/direct"
+    response=requests.get(url, params=params, timeout=10)
+    data=response.json()
+    if not data:
+        return None
+    return data
+def main():
+    city=get_city()
+    contry=get_country_code()
+    get_location(city,contry)
+main()
 
 
