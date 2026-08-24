@@ -3,6 +3,7 @@ import csv
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+import csv
 load_dotenv()
 def get_city():
     city=input("Enter city: ").strip()
@@ -77,6 +78,22 @@ def print_weather(weather_result):
     if weather_result["state"]!="":
         print(f"State/Region:{weather_result["state"]}")
 
+def save_weather_to_csv(weather_result):
+    filename = "weather_history.csv"
+    file_exists = os.path.exists(filename)
+    print("file exists:", file_exists)
+    try:
+        with open(filename,"a",newline="") as file:
+            fields=["search_time", "city", "state", "country","temperature", "feels_like", "condition","humidity", "wind_speed"]
+            writer=csv.DictWriter(file,fieldnames=fields)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(weather_result)
+        return True
+    except Exception as e:
+        print(type(e).__name__)
+        return False
+
 def run():
     city=get_city()
     if not check_not_empty_input(city):
@@ -96,7 +113,10 @@ def run():
     lat=loction["lat"]
     lon=loction["lon"]
     weather=get_weather(lat,lon)
-    print_weather(process_weather_data(loction,weather))
+    weather_result=process_weather_data(loction,weather)
+    print_weather(weather_result)
+    saved=save_weather_to_csv(weather_result)
+    if saved:
+        print("Weather result saved to weather_history")
 run()
-
 
