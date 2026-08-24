@@ -40,6 +40,14 @@ def get_location(city, country, state=""):
     params={"q": location,"limit": 1,"appid": API_KEY}
     url="http://api.openweathermap.org/geo/1.0/direct"
     response=requests.get(url, params=params)
+    try:
+        response.raise_for_status()
+    except requests.HTTPError:
+        if response.status_code == 401:
+            print("Invalid API key.")
+        else:
+            print(f"HTTP error: {response.status_code}")
+        return None
     data=response.json()
     if not data:
         return None
@@ -50,7 +58,21 @@ def get_weather(latitude, longitude):
     API_KEY=os.getenv("API_KEY")
     params={"lat": lat,"lon": lon,"appid": API_KEY,"units": "metric"}
     url="https://api.openweathermap.org/data/2.5/weather"
-    response=requests.get(url, params=params)
+    try:
+        response=requests.get(url, params=params)
+        response.raise_for_status()
+    except requests.HTTPError:
+        if response.status_code == 401:
+            print("Invalid API key")
+        else:
+            print(f"HTTP error: {response.status_code}")
+        return None
+    except requests.ConnectionError:
+        print("Connection error")
+        return None
+    except requests.RequestException as e:
+        print(f"Request error: {e}")
+        return None
     data=response.json()
     return data
 
@@ -81,7 +103,6 @@ def print_weather(weather_result):
 def save_weather_to_csv(weather_result):
     filename = "weather_history.csv"
     file_exists = os.path.exists(filename)
-    print("file exists:", file_exists)
     try:
         with open(filename,"a",newline="") as file:
             fields=["search_time", "city", "state", "country","temperature", "feels_like", "condition","humidity", "wind_speed"]
@@ -118,5 +139,7 @@ def run():
     saved=save_weather_to_csv(weather_result)
     if saved:
         print("Weather result saved to weather_history")
+    else:
+        print("The weather was received, but it could not be saved")
 run()
 
