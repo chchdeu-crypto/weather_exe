@@ -27,9 +27,9 @@ def raise_on_len():
 def check_if_us(txt):
     return txt == "US"
 
-def state_code():
-    state_code=input("Enter_state_code: ")
-
+def get_state_code():
+    state_code=input("Enter state code: ").upper().strip()
+    return state_code
 def get_location(city, country, state=""):
     API_KEY=os.getenv("API_KEY")
     if state:
@@ -40,26 +40,63 @@ def get_location(city, country, state=""):
     url="http://api.openweathermap.org/geo/1.0/direct"
     response=requests.get(url, params=params)
     data=response.json()
-    lat=data[0]["lat"]
-    lon=data[0]["lon"]
     if not data:
         return None
-    return lat,lon
+    return data[0]
 def get_weather(latitude, longitude):
     lat=latitude
     lon=longitude
     API_KEY=os.getenv("API_KEY")
-    params={"lat": lat,"lon": lon,"appid": API_KEY}
+    params={"lat": lat,"lon": lon,"appid": API_KEY,"units": "metric"}
     url="https://api.openweathermap.org/data/2.5/weather"
     response=requests.get(url, params=params)
     data=response.json()
     return data
 
-def main():
-    city=get_city()
-    contry=get_country_code()
-    get_weather(*get_location(city,contry))
+def process_weather_data(location,weather):
+    search_time=datetime.now()
+    city=location["name"]
+    state=location["state"]
+    country=location["country"]
+    temperature=weather["main"]["temp"]
+    feels_like=weather["main"]["feels_like"]
+    condition=weather["weather"][0]["description"]
+    humidity=weather["main"]["humidity"]
+    wind_speed=weather["wind"]["speed"]
+    weather_result={"search_time":str(search_time),"city":city,"state":state,"country":country,"temperature":temperature,"feels_like":feels_like,"condition":condition,"humidity":humidity,"wind_speed":wind_speed}
+    return weather_result
 
-main()
+def print_weather(weather_result):
+    print(f"City:{weather_result["city"]}")
+    print(f"Country:{weather_result["country"]}")
+    print(f"Temperature:{weather_result["temperature"]}\u00B0C")
+    print(f"Feels like:{weather_result["feels_like"]}\u00B0C")
+    print(f"Condition:{weather_result["condition"]}")
+    print(f"Humidity:{weather_result["humidity"]}%")
+    print(f"Wind speed:{weather_result["wind_speed"]}")
+    if weather_result["state"]!="":
+        print(f"State/Region:{weather_result["state"]}")
+
+def run():
+    city=get_city()
+    if not check_not_empty_input(city):
+        raise_on_empty()
+    contry=get_country_code()
+    if not check_not_empty_input(contry):
+            raise_on_empty()
+    if not check_len_input(contry):
+        raise_on_len()
+    if not check_if_us(contry):
+        loction=get_location(city,contry)
+    else:
+        loction=get_location(city,contry,get_state_code())
+    if not loction:
+        print("Location not found")
+        return
+    lat=loction["lat"]
+    lon=loction["lon"]
+    weather=get_weather(lat,lon)
+    print_weather(process_weather_data(loction,weather))
+run()
 
 
